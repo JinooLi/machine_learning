@@ -5,10 +5,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-matplotlib.use("TkAgg")
 
-# traning data
-
+# training data
 
 @dataclass
 class trainingData:
@@ -52,7 +50,7 @@ class activationFunction:
     def __init__(self, activation_type: activationType = activationType.sign):
         self.activation_type = activation_type
 
-    def fucntion(self, x: float) -> float:
+    def function(self, x: float) -> float:
         if self.activation_type == activationType.sign:
             return self._sign(x)
         elif self.activation_type == activationType.sigmoid:
@@ -90,7 +88,7 @@ def perceptron(
     weights: np.array,
     activation_type: activationType = activationType.sign,
 ) -> int:
-    # If data's lenght and weights's length are different, raise error
+    # If data's length and weights's length are different, raise error
     if len(data) != len(weights):
         raise ValueError("data and weights must have same length")
 
@@ -100,7 +98,7 @@ def perceptron(
     activation = activationFunction(activation_type)
 
     # use sign function
-    return activation.fucntion(dot)
+    return activation.function(dot)
 
 
 # training perceptron
@@ -153,7 +151,7 @@ def main():
 
     # init weights
     weights = np.random.rand(3)
-    print("init weigts : ", weights)
+    print("init weights : ", weights)
 
     # plot before training
     plt.subplot(2, 5, 1)
@@ -174,7 +172,7 @@ def main():
         learning_rate=0.05,
         activation_type=activationType.sigmoid,
     )
-    print("trained weigts", weights)
+    print("trained weights", weights)
 
     # plot after training
     plt.subplot(2, 5, 10)
@@ -185,7 +183,7 @@ def main():
     y = (-weights[0] * x - weights[2]) / weights[1]
     plt.plot(x, y)
 
-    plt.show()
+    plt.savefig("perceptron.png")
 
 
 if __name__ == "__main__":
