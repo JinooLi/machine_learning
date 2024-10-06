@@ -1,19 +1,26 @@
 {
-  "name": "ML Project",
-  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-  },
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "ms-python.black-formatter",
-        "mhutchie.git-graph",
-        "esbenp.prettier-vscode",
-        "streetsidesoftware.code-spell-checker",
-        "wayou.vscode-todo-highlight",
-        "GitHub.copilot"
-      ]
-    }
-  }
+	"name": "Existing Dockerfile",
+	"build": {
+		"context": ".",
+		"dockerfile": "./Dockerfile"
+	}
+,
+
+		"features": {
+		  "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+		},
+		"customizations": {
+		  "vscode": {
+			"extensions": [
+			  "ms-python.black-formatter",
+			  "mhutchie.git-graph",
+			  "esbenp.prettier-vscode",
+			  "streetsidesoftware.code-spell-checker",
+			  "wayou.vscode-todo-highlight",
+			  "GitHub.copilot"
+			]
+		  }
+		}
+	
+	  
 }
