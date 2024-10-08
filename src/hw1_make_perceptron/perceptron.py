@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -102,8 +103,6 @@ def perceptron(
 
 
 # training perceptron
-
-
 def train_perceptron(
     data: np.array,
     label: np.array,
@@ -144,6 +143,7 @@ def train_perceptron(
 
 
 def main():
+    plt.figure(figsize=(15, 6))
     # make training data
     training_data: trainingData = trainingData()
     data, label = make_data(80)
@@ -168,9 +168,9 @@ def main():
         training_data.data,
         training_data.label,
         weights,
-        epochs=120,
+        epochs=100,
         learning_rate=0.05,
-        activation_type=activationType.sigmoid,
+        activation_type=activationType.sign,
     )
     print("trained weights", weights)
 
@@ -181,9 +181,10 @@ def main():
         training_data.data[:, 0], training_data.data[:, 1], c=training_data.label
     )
     y = (-weights[0] * x - weights[2]) / weights[1]
-    plt.plot(x, y)
 
-    plt.savefig("perceptron.png")
+    plt.plot(x, y)
+    plt.tight_layout()
+    plt.savefig("hw1.png", dpi=100)
 
 
 if __name__ == "__main__":
