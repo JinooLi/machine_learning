@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -169,7 +167,7 @@ def main():
         training_data.label,
         weights,
         epochs=100,
-        learning_rate=0.05,
+        learning_rate=0.5,
         activation_type=activationType.sign,
     )
     print("trained weights", weights)
