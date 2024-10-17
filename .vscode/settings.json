@@ -2,11 +2,14 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "argmax",
+    "figsize",
+    "keepdim",
     "optim",
     "relu",
     "softmax",
     "torchvision",
     "xlabel",
+    "xlim",
     "ylabel"
   ]
 }
