@@ -1,2 +1,3 @@
 data
 src/**/*.png
+*.pth
