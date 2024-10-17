@@ -1,3 +1,12 @@
 {
-    "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "cSpell.words": [
+    "argmax",
+    "optim",
+    "relu",
+    "softmax",
+    "torchvision",
+    "xlabel",
+    "ylabel"
+  ]
 }
