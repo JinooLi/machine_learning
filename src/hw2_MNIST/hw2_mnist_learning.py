@@ -109,10 +109,11 @@ for epoch in range(50):
         loss.backward()
         optimizer.step()
 
+        # 모든 loss, accuracy를 더한다.
         total_loss += loss.item()
 
-        numpy_output = output.detach().cpu().numpy()
-        numpy_target = target.detach().cpu().numpy()
+        numpy_output: np.ndarray = output.detach().cpu().numpy()
+        numpy_target: np.ndarray = target.detach().cpu().numpy()
         numpy_output = numpy_output.argmax(axis=1)
         numpy_target = numpy_target.argmax(axis=1)
         correct_count = (numpy_output == numpy_target).sum()
