@@ -5,6 +5,33 @@ from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+import time
+
+
+# 파라미터 클래스 정의
+class params:
+    def __init__(
+        self,
+        batch_size: int = 1024,
+        lr: float = 0.001,
+        epoch: int = 50,
+        normalize_mean: float = 0.5,
+        normalize_std: float = 0.5,
+        optimizer: torch.optim.Optimizer = torch.optim.Adam,
+        loss: nn.modules.loss._Loss = nn.CrossEntropyLoss,
+    ) -> None:
+        self.batch_size = batch_size
+        self.lr = lr
+        self.epoch = epoch
+        self.normalize_mean = normalize_mean
+        self.normalize_std = normalize_std
+        self.optimizer = optimizer
+        self.loss = loss
+
+
+# 파라미터 객체 생성
+param = params()
+
 
 # 데이터셋을 다운로드할 경로 설정
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -28,7 +55,9 @@ transform = transforms.Compose(
     [
         transforms.ToTensor(),  # 이미지를 (0,1) 범위의 텐서로 변환
         RandomInvertColor(),  # 이미지의 색상을 랜덤으로 반전
-        transforms.Normalize(mean=(0.5,), std=(0.5,)),  # 이미지를 정규화한다.
+        transforms.Normalize(
+            mean=(param.normalize_mean,), std=(param.normalize_std,)
+        ),  # 이미지를 정규화한다.
     ]
 )
 
@@ -43,7 +72,7 @@ test_dataset = datasets.MNIST(
 
 # 데이터셋을 batch 단위로 불러올 수 있는 DataLoader 객체 생성.
 # DataLoader는 데이터셋을 배치 단위로 분할하고, 데이터를 섞어준다.
-train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=param.batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
 
 # 데이터셋 확인
@@ -80,15 +109,17 @@ class MnistTrain(nn.Module):
 
 model = MnistTrain().to(device)
 # use cross entropy loss
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+criterion = param.loss()
+optimizer = param.optimizer(model.parameters(), lr=param.lr)
 
 # 학습 루프
 history = []
 accuracy_mean = []
 history_test = []
 test_accuracy_mean = []
-for epoch in range(50):
+total_time = 0
+for _epoch in range(param.epoch):
+    start_time = time.time()
     model.train()
     total = 0
     total_loss = 0
@@ -121,6 +152,9 @@ for epoch in range(50):
         total_accuracy += accuracy
 
         total += 1
+
+    end_time = time.time()
+    total_time += end_time - start_time
 
     history.append(total_loss / total)
     accuracy_mean.append(total_accuracy / total)
@@ -177,7 +211,13 @@ for epoch in range(50):
     plt.savefig("Loss-Accuracy.png", dpi=100)
     plt.close()
 
-    print(f"Epoch {epoch+1:2d}, Test Accuracy: {test_accuracy_mean[-1]:.4f}")
+    print(
+        f"Epoch {_epoch+1:2d}, Test Accuracy: {test_accuracy_mean[-1]:.4f}, Learning Time: {end_time - start_time:.2f} sec"
+    )
+
+print(
+    f"Total Learning Time: {total_time:.2f} sec, Average Time per epoch: {total_time / epoch:.2f} sec"
+)
 
 # 모델의 가중치 저장 여부를 묻는다.
 while True:
