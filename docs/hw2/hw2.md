@@ -6,7 +6,7 @@
     1. [환경](###환경)
     2. [코드](###코드)
 3. [실험](##실험)
-    1. [실험 조건](###실험-조건)
+    1. [실험 설계](###실험-설계)
     2. [실험 결과](###실험-결과)
     3. [결과 분석](###결과-분석)
 
@@ -45,11 +45,36 @@ from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
 import numpy as np
 import os
+import time
 ```
 
 ---
 
-#### 2. 작업 경로 설정 및 디바이스 선택
+#### 2. 파라미터 클래스 정의
+
+```python
+class params:
+    def __init__(self, batch_size=1024, lr=0.001, epoch=50, 
+                 normalize_mean=0.5, normalize_std=0.5, 
+                 optimizer=torch.optim.Adam, loss=nn.CrossEntropyLoss):
+        self.batch_size = batch_size
+        self.lr = lr
+        self.epoch = epoch
+        self.normalize_mean = normalize_mean
+        self.normalize_std = normalize_std
+        self.optimizer = optimizer
+        self.loss = loss
+
+param = params()
+```
+- **params** 클래스를 정의하여 하이퍼파라미터를 설정한다.
+- `param` 객체를 생성하여 하이퍼파라미터를 초기화한다.
+
+이 객체를 통해 **batch size, learning rate, epoch 수, 정규화 값, optimizer, loss 함수**를 설정할 수 있다.
+
+---
+
+#### 3. 작업 경로 설정 및 디바이스 선택
 
 ```python
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
@@ -62,7 +87,7 @@ print("This computer uses", device)
 
 ---
 
-#### 3. 사용자 정의 색 반전 클래스 정의
+#### 4. 사용자 정의 색 반전 클래스 정의
 
 ```python
 class RandomInvertColor(object):
@@ -77,7 +102,7 @@ class RandomInvertColor(object):
 
 ---
 
-#### 4. 데이터 전처리 파이프라인 설정
+#### 5. 데이터 전처리 파이프라인 설정
 
 ```python
 transform = transforms.Compose([
@@ -94,7 +119,7 @@ transform = transforms.Compose([
 
 ---
 
-#### 5. 데이터셋 및 데이터 로더 설정
+#### 6. 데이터셋 및 데이터 로더 설정
 
 ```python
 train_dataset = datasets.MNIST(root="./data", train=True, download=True, transform=transform)
@@ -109,7 +134,7 @@ test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
 
 ---
 
-#### 6. 데이터셋 예시 확인
+#### 7. 데이터셋 예시 확인
 
 ```python
 examples = enumerate(train_loader)
@@ -122,7 +147,7 @@ print(f"예시 라벨: {example_targets}")
 
 ---
 
-#### 7. CNN 모델 정의
+#### 8. CNN 모델 정의
 
 ```python
 class MnistTrain(nn.Module):
@@ -153,12 +178,12 @@ class MnistTrain(nn.Module):
 
 ---
 
-#### 8. 손실 함수 및 옵티마이저 설정
+#### 9. 손실 함수 및 옵티마이저 설정
 
 ```python
 model = MnistTrain().to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+criterion = param.loss()
+optimizer = param.optimizer(model.parameters(), lr=param.lr)
 ```
 
 - loss 함수와 옵티마이저를 설정한다.
@@ -166,14 +191,16 @@ optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 ---
 
-#### 9. 학습 루프 정의
+#### 10. 학습 루프 정의
 
 ```python
 history = []
 accuracy_mean = []
 history_test = []
 test_accuracy_mean = []
-for epoch in range(50):
+total_time = 0
+for _epoch in range(param.epoch):
+    start_time = time.time()
     model.train()
     total, total_loss, total_accuracy = 0, 0, 0
     for data, target in train_loader:
@@ -191,17 +218,20 @@ for epoch in range(50):
         total_accuracy += accuracy
         total += 1
 
+    end_time = time.time()
+    total_time += end_time - start_time
+
     history.append(total_loss / total)
     accuracy_mean.append(total_accuracy / total)
 ```
 
 - **50번의 epoch** 동안 학습.
 - **Gradient 초기화**, **역전파**, **가중치 업데이트**를 수행.
-- 각 batch의 **손실과 정확도**를 기록.
+- 각 batch의 **손실과 정확도, 시간**을 기록.
 
 ---
 
-#### 10. 테스트 루프 정의
+#### 11. 테스트 루프 정의
 
 ```python
 model.eval()
@@ -226,7 +256,7 @@ with torch.no_grad():
 
 ---
 
-#### 11. 결과 시각화
+#### 12. 결과 시각화
 
 ```python
 plt.figure(figsize=(14, 6))
@@ -252,7 +282,7 @@ plt.close()
 
 ---
 
-#### 12. 모델 가중치 저장 여부 확인
+#### 13. 모델 가중치 저장 여부 확인
 
 ```python
 while True:
@@ -270,12 +300,82 @@ while True:
 
 - **모델 가중치 저장 여부**를 묻고, 응답에 따라 가중치를 저장한다.
 
-
+---
 
 ## 실험
 
-### 실험 조건
+### 실험 설계
+기본적으로 위에서 정의한 CNN모델을 사용하며, 실험마다 다음과 같은 조건을 변경하여 학습을 시키고, 결과를 비교한다.
+
+기본적인 하이퍼파라미터는 다음과 같다.
+> 
+    - batch size: 1024
+    - learning rate: 0.001
+    - epoch: 50
+    - normalize_mean: 0.5
+    - normalize_std: 0.5
+    - optimizer: Adam
+    - loss: CrossEntropyLoss
+
+레이어 구조는 다음과 같다.
+> 
+    - Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
+    - Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
+    - MaxPool2d(kernel_size=2, stride=2)
+    - Dropout2d(p=0.25)
+    - Linear(64 * 14 * 14, 128)
+    - Dropout(p=0.5)
+    - Linear(128, 10)
+
+#### 실험 1
+Layer 구조를 변경하여 실험한다.
+
+#### 실험 2
+활성화 함수를 변경하여 실험한다.
+
+#### 실험 3
+학습률을 변경하여 실험한다.
+
+#### 실험 4
+batch size를 변경하여 실험한다.
+
+#### 실험 5
+optimizer 종류를 변경하여 실험한다.
+
+#### 실험 6
+epoch 수를 변경하여 실험한다.
+
+#### 실험 7
+정규화 방법을 변경하여 실험한다.
 
 ### 실험 결과
 
+#### 실험 1
+
+#### 실험 2
+
+#### 실험 3
+
+#### 실험 4
+
+#### 실험 5
+
+#### 실험 6
+
+#### 실험 7
+
 ### 결과 분석
+
+#### 실험 1
+
+#### 실험 2
+
+#### 실험 3
+
+#### 실험 4
+
+#### 실험 5
+
+#### 실험 6
+
+#### 실험 7
