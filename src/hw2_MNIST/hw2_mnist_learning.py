@@ -177,7 +177,7 @@ for epoch in range(50):
     plt.savefig("Loss-Accuracy.png", dpi=100)
     plt.close()
 
-    print(f"Epoch {epoch+1}, Accuracy: {test_accuracy_mean[-1]:.4f}")
+    print(f"Epoch {epoch+1:2d}, Test Accuracy: {test_accuracy_mean[-1]:.4f}")
 
 # 모델의 가중치 저장 여부를 묻는다.
 while True:
