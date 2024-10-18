@@ -173,10 +173,20 @@ for epoch in range(50):
     plt.title("Training Accuracy")
     plt.legend(["train", "test"])
 
-    plt.savefig("loss.png", dpi=100)
+    plt.savefig("Loss-Accuracy.png", dpi=100)
     plt.close()
 
     print(f"Epoch {epoch+1}, Accuracy: {test_accuracy_mean[-1]:.4f}")
 
-# 모델의 가중치 저장
-torch.save(model.state_dict(), "model_weights.pth")
+# 모델의 가중치 저장 여부를 묻는다.
+while True:
+    k = input("모델 가중치를 저장하시겠습니까? (y/n): ")
+    if k == "y":
+        torch.save(model.state_dict(), "model_weights.pth")
+        print("모델 가중치를 저장했습니다.")
+        break
+    elif k == "n":
+        print("모델 가중치를 저장하지 않았습니다.")
+        break
+    else:
+        print("잘못된 입력입니다. 다시 입력해주세요.")
