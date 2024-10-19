@@ -12,6 +12,7 @@ import time
 class params:
     def __init__(
         self,
+        name: str = "MNIST",
         batch_size: int = 1024,
         lr: float = 0.001,
         epoch: int = 50,
@@ -20,6 +21,7 @@ class params:
         optimizer: torch.optim.Optimizer = torch.optim.Adam,
         loss: nn.modules.loss._Loss = nn.CrossEntropyLoss,
     ) -> None:
+        self.name = name
         self.batch_size = batch_size
         self.lr = lr
         self.epoch = epoch
@@ -30,7 +32,7 @@ class params:
 
 
 # 파라미터 객체 생성
-param = params()
+param = params(name="test")
 
 
 # 데이터셋을 다운로드할 경로 설정
@@ -187,36 +189,81 @@ for _epoch in range(param.epoch):
     history_test.append(test_loss / total)
     test_accuracy_mean.append(total_accuracy / total)
 
-    # loss, accuracy 그래프 출력
-    plt.figure(figsize=(14, 6))
-    plt.tight_layout()
-
-    linspace = np.linspace(1, len(history), len(history))
-    plt.subplot(1, 2, 1)
-    plt.plot(linspace, history)
-    plt.plot(linspace, history_test)
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.title("Training Loss")
-    plt.legend(["train", "test"])
-
-    plt.subplot(1, 2, 2)
-    plt.plot(linspace, accuracy_mean)
-    plt.plot(linspace, test_accuracy_mean)
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.title("Training Accuracy")
-    plt.legend(["train", "test"])
-
-    plt.savefig("Loss-Accuracy.png", dpi=100)
-    plt.close()
-
     print(
-        f"Epoch {_epoch+1:2d}, Test Accuracy: {test_accuracy_mean[-1]:.4f}, Learning Time: {end_time - start_time:.2f} sec"
+        f"Epoch: {_epoch+1:2d}, Test Loss: {history_test[-1]:.4f}, Test Accuracy: {test_accuracy_mean[-1]:.4f}, Learning Time: {end_time - start_time:.2f} sec"
     )
 
+
+plt.figure(figsize=(14, 12))
+plt.tight_layout()
+
+# params 내용 출력
+plt.subplot(2, 20, 1)
+plt.title(param.name)
+plt.text(0, 0.8, "batch size: " + str(param.batch_size), fontsize=12, ha="left")
+plt.text(0, 0.75, "learning rate: " + str(param.lr), fontsize=12, ha="left")
+plt.text(0, 0.7, "epoch: " + str(param.epoch), fontsize=12, ha="left")
+plt.text(
+    0, 0.65, "normalize mean: " + str(param.normalize_mean), fontsize=12, ha="left"
+)
+plt.text(0, 0.6, "normalize std: " + str(param.normalize_std), fontsize=12, ha="left")
+plt.text(0, 0.55, "optimizer: " + str(param.optimizer), fontsize=12, ha="left")
+plt.text(0, 0.5, "loss: " + str(param.loss), fontsize=12, ha="left")
+plt.text(
+    0,
+    0.45,
+    "Total Learning Time: " + str((total_time // 0.01) / 100) + " sec",
+    fontsize=12,
+    ha="left",
+)
+plt.text(
+    0,
+    0.4,
+    "Average Time per epoch: "
+    + str(((total_time / param.epoch) // 0.01) / 100)
+    + " sec",
+    fontsize=12,
+    ha="left",
+)
+plt.text(
+    0,
+    0.35,
+    "Final Test Accuracy: " + str((test_accuracy_mean[-1] // 0.001) / 1000),
+    fontsize=12,
+    ha="left",
+)
+plt.text(
+    0,
+    0.3,
+    "Final Test Loss: " + str((history_test[-1] // 0.001) / 1000),
+    fontsize=12,
+    ha="left",
+)
+plt.axis("off")
+
+# loss, accuracy 그래프 출력
+linspace = np.linspace(1, len(history), len(history))
+plt.subplot(2, 2, 3)
+plt.plot(linspace, history)
+plt.plot(linspace, history_test)
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training Loss")
+plt.legend(["train", "test"])
+
+plt.subplot(2, 2, 4)
+plt.plot(linspace, accuracy_mean)
+plt.plot(linspace, test_accuracy_mean)
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.title("Training Accuracy")
+plt.legend(["train", "test"])
+
+plt.savefig(param.name + "-Loss-Accuracy.png", dpi=200)
+plt.close()
+
 print(
-    f"Total Learning Time: {total_time:.2f} sec, Average Time per epoch: {total_time / epoch:.2f} sec"
+    f"Total Learning Time: {total_time:.2f} sec, Average Time per epoch: {total_time / param.epoch:.2f} sec"
 )
 
 # 모델의 가중치 저장 여부를 묻는다.
