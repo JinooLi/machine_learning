@@ -259,15 +259,59 @@ with torch.no_grad():
 #### 12. 결과 시각화
 
 ```python
-plt.figure(figsize=(14, 6))
-plt.subplot(1, 2, 1)
+plt.figure(figsize=(14, 12))
+plt.tight_layout()
+# params 내용 출력
+plt.subplot(2, 20, 1)
+plt.title(param.name)
+plt.text(0, 0.8, "batch size: " + str(param.batch_size), fontsize=12, ha="left")
+plt.text(0, 0.75, "learning rate: " + str(param.lr), fontsize=12, ha="left")
+plt.text(0, 0.7, "epoch: " + str(param.epoch), fontsize=12, ha="left")
+plt.text(
+    0, 0.65, "normalize mean: " + str(param.normalize_mean), fontsize=12, ha="left"
+)
+plt.text(0, 0.6, "normalize std: " + str(param.normalize_std), fontsize=12, ha="left")
+plt.text(0, 0.55, "optimizer: " + str(param.optimizer), fontsize=12, ha="left")
+plt.text(0, 0.5, "loss: " + str(param.loss), fontsize=12, ha="left")
+plt.text(
+    0,
+    0.45,
+    "Total Learning Time: " + str((total_time // 0.01) / 100) + " sec",
+    fontsize=12,
+    ha="left",
+)
+plt.text(
+    0,
+    0.4,
+    "Average Time per epoch: "
+    + str(((total_time / param.epoch) // 0.01) / 100)
+    + " sec",
+    fontsize=12,
+    ha="left",
+)
+plt.text(
+    0,
+    0.35,
+    "Final Test Accuracy: " + str((test_accuracy_mean[-1] // 0.001) / 1000),
+    fontsize=12,
+    ha="left",
+)
+plt.text(
+    0,
+    0.3,
+    "Final Test Loss: " + str((history_test[-1] // 0.001) / 1000),
+    fontsize=12,
+    ha="left",
+)
+plt.axis("off")
+plt.subplot(2, 2, 3)
 plt.plot(np.linspace(1, len(history), len(history)), history)
 plt.plot(np.linspace(1, len(history), len(history)), history_test)
 plt.xlabel("Epoch")
 plt.ylabel("Loss")
 plt.legend(["train", "test"])
 
-plt.subplot(1, 2, 2)
+plt.subplot(2, 2, 4)
 plt.plot(np.linspace(1, len(accuracy_mean), len(accuracy_mean)), accuracy_mean)
 plt.plot(np.linspace(1, len(accuracy_mean), len(accuracy_mean)), test_accuracy_mean)
 plt.xlabel("Epoch")
@@ -277,8 +321,9 @@ plt.legend(["train", "test"])
 plt.savefig("Loss-Accuracy.png", dpi=100)
 plt.close()
 ```
-
+- **모델 정보**와 **학습 시간, 테스트 정확도**를 출력.
 - **손실과 정확도**의 변화를 그래프로 시각화 및 저장.
+
 
 ---
 
@@ -305,9 +350,9 @@ while True:
 ## 실험
 
 ### 실험 설계
-기본적으로 위에서 정의한 CNN모델을 사용하며, 실험마다 다음과 같은 조건을 변경하여 학습을 시키고, 결과를 비교한다.
+기본으로 다음과 같이 정의한 CNN모델을 사용하며, 실험마다 몇가지 조건을 변경하며 학습을 시키고, 결과를 비교한다.
 
-기본적인 하이퍼파라미터는 다음과 같다.
+기본 하이퍼파라미터는 다음과 같다.
 > 
     - batch size: 1024
     - learning rate: 0.001
@@ -317,52 +362,275 @@ while True:
     - optimizer: Adam
     - loss: CrossEntropyLoss
 
-레이어 구조는 다음과 같다.
+기본 레이어 구조는 다음과 같다.
 > 
-    - Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
-    - Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-    - MaxPool2d(kernel_size=2, stride=2)
-    - Dropout2d(p=0.25)
-    - Linear(64 * 14 * 14, 128)
-    - Dropout(p=0.5)
-    - Linear(128, 10)
+    - Layer 1: convolutional layer
+        - relu 
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 28x28x1
+        - out: 28x28x32
+    - Layer 2: convolutional layer
+        - relu
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 28x28x32
+        - out: 28x28x64
+    - Layer 3: Max Pool
+        - kernel size: 2x2, 
+        - stride: 2
+        - in: 28x28x64
+        - out: 14x14x64
+    - Layer 4: Dropout
+        - probability: 0.25
+    - Layer 5: Linear
+        - relu
+        - in: 64 * 14 * 14 = 12544
+        - out: 128
+    - Layer 6: Dropout
+        - probability: 0.5
+    - Layer 7: Linear
+        - softmax
+        - in: 128
+        - out: 10
+
+#### 실험 0
+기본 하이퍼파라미터와 레이어 구조로 실험한다. 이때의 결과를 기준으로 다른 실험 결과와 비교한다. 각 실험별로 총 3번의 실험을 진행하며 각각의 성능을 평균내어 기준으로 삼는다.
+
+실험 결과는 이미지로 저장되며, 다음 정보를 가진다.
+>
+    0. 모델 정보
+    1. 각 epoch별로 loss와 accuracy의 변화를 나타낸 그래프
+    2. 학습 시간
+    3. 최종 테스트 정확도
+    4. 최종 테스트 손실
+
+추가로 로그를 통해 정확도 0.95, 0.98, 0.99를 넘어가는 epoch을 기록한다.
 
 #### 실험 1
-Layer 구조를 변경하여 실험한다.
+Layer 구조를 다음과 같이 convolutional layer 2개에서 3개로 변경하여 실험한다.
+> 
+    - Layer 1: convolutional layer
+        - relu 
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 28x28x1
+        - out: 28x28x32
+    - Layer 2: convolutional layer
+        - relu
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 28x28x32
+        - out: 28x28x64
+    - Layer 3: Max Pool
+        - kernel size: 2x2, 
+        - stride: 2
+        - in: 28x28x64
+        - out: 14x14x64
+    - Layer 4: convolutional layer
+        - relu
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 14x14x64
+        - out: 14x14x64
+    - Layer 4: Dropout
+        - probability: 0.25
+    - Layer 5: Linear
+        - relu
+        - in: 64 * 14 * 14 = 12544
+        - out: 128
+    - Layer 6: Dropout
+        - probability: 0.5
+    - Layer 7: Linear
+        - softmax
+        - in: 128
+        - out: 10
+
+이 실험을 통해 레이어의 수가 늘어남에 따라 성능이 어떻게 변하는지 비교한다.
 
 #### 실험 2
-활성화 함수를 변경하여 실험한다.
+다음과 같이 마지막 레이어의 활성함수를 시그모이드로 변경하여 실험한다.
+>
+    - Layer 1: convolutional layer
+        - relu 
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 28x28x1
+        - out: 28x28x32
+    - Layer 2: convolutional layer
+        - relu
+        - kernel size: 3x3
+        - stride: 1
+        - padding: 1
+        - in: 28x28x32
+        - out: 28x28x64
+    - Layer 3: Max Pool
+        - kernel size: 2x2, 
+        - stride: 2
+        - in: 28x28x64
+        - out: 14x14x64
+    - Layer 4: Dropout
+        - probability: 0.25
+    - Layer 5: Linear
+        - relu
+        - in: 64 * 14 * 14 = 12544
+        - out: 128
+    - Layer 6: Dropout
+        - probability: 0.5
+    - Layer 7: Linear
+        - sigmoid
+        - in: 128
+        - out: 10
+
+이 실험을 통해 마지막 레이어에서 softmax를 사용하는 것이 더 좋은 성능을 낼지, 시그모이드를 사용하는 것이 더 좋은 성능을 낼지 비교한다. 
 
 #### 실험 3
-학습률을 변경하여 실험한다.
+batch size를 2048로 변경하고, epoch 수를 25로, 학습률을 0.002로 변경하여 실험한다.
+
+이전 실험 0과 비교하였을 때, 학습의 횟수 자체는 같고, 데이터 수 대비 사용되는 학습률도 기존과 같게 설계하였다.
+
+이를 통해 batch size와 epoch 수, 학습률이 성능에 어떤 영향을 미치는지 비교한다.
 
 #### 실험 4
-batch size를 변경하여 실험한다.
+optimizer 종류를 SGD로 변경하여 실험한다.
+
+이를 통해 optimizer가 성능에 어떤 영향을 미치는지 비교한다.
 
 #### 실험 5
-optimizer 종류를 변경하여 실험한다.
+정규화 방법을 mean=0.1307, std=0.3081로 변경하여 실험한다.(이는 MNIST 데이터셋의 평균과 표준편차이다.)
 
-#### 실험 6
-epoch 수를 변경하여 실험한다.
-
-#### 실험 7
-정규화 방법을 변경하여 실험한다.
+이를 통해 정규화 값이 성능에 어떤 영향을 미치는지 비교한다.
 
 ### 실험 결과
 
+#### 실험 0
+- 실험 0-1  
+    <img src="attachments/Exp0-1-Loss-Accuracy.png" width="500" height="400">  
+- 실험 0-2  
+    <img src="attachments/Exp0-2-Loss-Accuracy.png" width="500" height="400">
+- 실험 0-3  
+    <img src="attachments/Exp0-3-Loss-Accuracy.png" width="500" height="400">
+
+실험 결과, 기본 CNN 네트워크의 성능은 다음과 같다. 
+
+
+| 항목                  | 값         |
+|---------------------|------------|
+| 학습후 테스트 정확도     | 0.99       |
+| 학습후 테스트 손실       | 1.47       |
+| 평균 epoch당 학습 시간 | 6.6초      |
+| 최초 0.95 이상 정확도 epoch | 2번째 epoch |
+| 최초 0.98 이상 정확도 epoch | 6번째 epoch |
+| 최초 0.99 이상 정확도 epoch | 45번째 epoch |
+
 #### 실험 1
+- 실험 1-1  
+    <img src="attachments/Exp1-1-Loss-Accuracy.png" width="500" height="400">  
+- 실험 1-2  
+    <img src="attachments/Exp1-2-Loss-Accuracy.png" width="500" height="400">
+- 실험 1-3  
+    <img src="attachments/Exp1-3-Loss-Accuracy.png" width="500" height="400">
+
+실험 결과, convolutional Layer을 하나 더한 CNN 네트워크의 성능은 다음과 같다. 
+
+
+| 항목                  | 값         |
+|---------------------|------------|
+| 학습후 테스트 정확도     | 0.991      |
+| 학습후 테스트 손실       | 1.469       |
+| 평균 epoch당 학습 시간 | 6.25초      |
+| 최초 0.95 이상 정확도 epoch | 2번째 epoch |
+| 최초 0.98 이상 정확도 epoch | 5번째 epoch |
+| 최초 0.99 이상 정확도 epoch | 24번째 epoch |
 
 #### 실험 2
+- 실험 2-1  
+    <img src="attachments/Exp2-1-Loss-Accuracy.png" width="500" height="400">  
+- 실험 2-2  
+    <img src="attachments/Exp2-2-Loss-Accuracy.png" width="500" height="400">
+- 실험 2-3  
+    <img src="attachments/Exp2-3-Loss-Accuracy.png" width="500" height="400">
+
+실험 결과, 마지막 레이어의 활성함수를 softmax에서 sigmoid로 변경한 CNN 네트워크의 성능은 다음과 같다. 
+
+
+| 항목                  | 값         |
+|---------------------|------------|
+| 학습후 테스트 정확도     | 0.988      |
+| 학습후 테스트 손실       | 1.471       |
+| 평균 epoch당 학습 시간 | 6.49초      |
+| 최초 0.95 이상 정확도 epoch | 2번째 epoch |
+| 최초 0.98 이상 정확도 epoch | 7번째 epoch |
+| 최초 0.99 이상 정확도 epoch | x |
+
 
 #### 실험 3
+- 실험 3-1  
+    <img src="attachments/Exp3-1-Loss-Accuracy.png" width="500" height="400">  
+- 실험 3-2  
+    <img src="attachments/Exp3-2-Loss-Accuracy.png" width="500" height="400">
+- 실험 3-3  
+    <img src="attachments/Exp3-3-Loss-Accuracy.png" width="500" height="400">
+
+실험 결과, batch size를 2048로, epoch 수를 25로, 학습률을 0.002로 변경한 CNN 네트워크의 성능은 다음과 같다.
+
+| 항목                  | 값         |
+|---------------------|------------|
+| 학습후 테스트 정확도     | 0.987  |
+| 학습후 테스트 손실       | 1.4726   |
+| 평균 epoch당 학습 시간 | 6.56초   |
+| 최초 0.95 이상 정확도 epoch | 2번째 epoch |
+| 최초 0.98 이상 정확도 epoch | 7번째 epoch |
+| 최초 0.99 이상 정확도 epoch | x |
 
 #### 실험 4
 
+- 실험 4-1  
+    <img src="attachments/Exp4-1-Loss-Accuracy.png" width="500" height="400">  
+- 실험 4-2  
+    <img src="attachments/Exp4-2-Loss-Accuracy.png" width="500" height="400">
+- 실험 4-3  
+    <img src="attachments/Exp4-3-Loss-Accuracy.png" width="500" height="400">
+
+실험 결과, optimizer를 Adam에서 SGD로 변경한 CNN 네트워크의 성능은 다음과 같다.
+
+| 항목                  | 값         |
+|---------------------|------------|
+| 학습후 테스트 정확도     | 0.162  |
+| 학습후 테스트 손실       | 2.299  |
+| 평균 epoch당 학습 시간 | 6.50초  |
+| 최초 0.95 이상 정확도 epoch | x |
+| 최초 0.98 이상 정확도 epoch | x|
+| 최초 0.99 이상 정확도 epoch | x |
+
+학습이 거의 진행되지 않을 뿐 아니라, test set에서의 정확도와 손실이 언제나 비례하지는 않는 것을 볼 수 있다.
+
 #### 실험 5
+- 실험 5-1  
+    <img src="attachments/Exp5-1-Loss-Accuracy.png" width="500" height="400">  
+- 실험 5-2  
+    <img src="attachments/Exp5-2-Loss-Accuracy.png" width="500" height="400">
+- 실험 5-3  
+    <img src="attachments/Exp5-3-Loss-Accuracy.png" width="500" height="400">
 
-#### 실험 6
+실험 결과, 정규화 값을 MNIST 데이터셋의 평균과 표준편차로 변경한 CNN 네트워크의 성능은 다음과 같다.
 
-#### 실험 7
+| 항목                  | 값         |
+|---------------------|------------|
+| 학습후 테스트 정확도     | 0.99  |
+| 학습후 테스트 손실       | 1.47  |
+| 평균 epoch당 학습 시간 | 6.48초  |
+| 최초 0.95 이상 정확도 epoch | 2번째 epoch |
+| 최초 0.98 이상 정확도 epoch | 6번째 epoch|
+| 최초 0.99 이상 정확도 epoch | 47 번째 epoch |
+
+
 
 ### 결과 분석
 
