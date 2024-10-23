@@ -2,8 +2,11 @@
   "editor.formatOnSave": true,
   "cSpell.words": [
     "argmax",
+    "cmap",
     "elif",
     "figsize",
+    "fontsize",
+    "imshow",
     "keepdim",
     "linspace",
     "Matplotlib",
@@ -14,7 +17,11 @@
     "relu",
     "savefig",
     "softmax",
+    "suptitle",
+    "torchsummary",
     "torchvision",
+    "torchviz",
+    "unsqueeze",
     "xlabel",
     "xlim",
     "ylabel"
