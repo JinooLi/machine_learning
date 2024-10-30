@@ -5,8 +5,8 @@
 2. [실험](##실험)
     1. [실험 설계](###실험-설계)
     2. [실험 결과](###실험-결과)
-    3. [결과 분석](###결과-분석)
-3.[Appendix](#Appendix)
+    3. [결과 분석](###결과-분석)  
+3. [Appendix](#Appendix)  
     1. [MNIST 분류기 구성](##MNIST-분류기-구성)
 
 ## 실험 목표
@@ -19,7 +19,7 @@
 ## 실험
 
 ### 실험 설계
-기본으로 다음과 같이 정의한 CNN모델을 사용하며, 실험마다 몇가지 조건을 변경하며 학습을 시키고, 결과를 비교한다.
+기본으로 다음과 같이 정의한 CNN모델을 사용하며, 실험마다 몇가지 조건을 변경하며 학습을 시키고 그 결과를 비교한다.
 
 기본 하이퍼파라미터는 다음과 같다.
 > 
@@ -333,7 +333,7 @@ optimizer 종류를 SGD로 변경하여 실험한다.
     - Matplotlib
 
 ### 코드
-깃허브 링크 : [https://github.com/JinooLi/machine_learning](https://github.com/JinooLi/machine_learning)
+깃허브 링크 : [https://github.com/JinooLi/machine_learning/blob/main/src/hw2_MNIST/hw2_mnist_learning.py](https://github.com/JinooLi/machine_learning/blob/main/src/hw2_MNIST/hw2_mnist_learning.py)
 
 
 #### 1. 필요한 라이브러리 임포트
