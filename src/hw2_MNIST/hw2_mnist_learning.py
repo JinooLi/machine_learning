@@ -3,7 +3,6 @@ import torch.nn as nn
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from torchsummary import summary
-from torchvision import datasets, transforms
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -43,7 +42,7 @@ class params:
 
 # 파라미터 객체 생성.
 # 여기에서 실험에서 변경할 파라미터를 설정한다.
-param = params()
+param = params(normalize_mean=0.1307, normalize_std=0.3018)
 
 
 # cnn 모델 정의
@@ -117,7 +116,7 @@ test_dataset = datasets.MNIST(
     root="./data", train=False, download=True, transform=transform
 )
 
-# 이미지 출력
+# 데이터셋 9개 출력
 img_loader = DataLoader(train_dataset, batch_size=9, shuffle=True)
 images, labels = next(iter(img_loader))
 
@@ -320,4 +319,4 @@ def experiment(exp_name: str):
 
 
 for i in range(3):
-    experiment("Exp4-" + str(i + 1))
+    experiment("Exp5-" + str(i + 1))
