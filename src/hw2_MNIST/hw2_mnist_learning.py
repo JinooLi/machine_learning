@@ -17,7 +17,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("This computer uses", device)
 
 
-# 파라미터 클래스 정의
+# 파라미터 클래스 정의.
+# 이 클래스는 학습에 필요한 파라미터를 저장하는 클래스이다.
 class params:
     def __init__(
         self,
@@ -40,9 +41,12 @@ class params:
         self.loss = loss
 
 
+# 파라미터 객체 생성.
+# 여기에서 실험에서 변경할 파라미터를 설정한다.
 param = params()
 
 
+# cnn 모델 정의
 class MnistTrain(nn.Module):
     def __init__(self):
         super(MnistTrain, self).__init__()
@@ -67,31 +71,29 @@ class MnistTrain(nn.Module):
 
 
 # 사용자 정의 색 반전 클래스 정의
-# 랜덤으로 색상을 반전시키는 클래스
+# 랜덤으로 색상을 반전하거나 엣지 이미지로 변환하는 클래스
 class RandomInvertColor(object):
     def __call__(self, tensor):
-        if torch.rand(1) > 0.5:
+        rand = torch.rand(1)
+        if rand > 0.66:  # 그대로
             return tensor
-        return 1 - tensor  # 색상 반전
-
-
-# 모든 데이터셋을 컨투어로 변환하는 클래스 정의
-class ToContour(object):
-    def __call__(self, tensor):
-        tensor = (tensor > 0.5).float()
-        tensor = tensor.squeeze().numpy()
-        contour = np.zeros_like(tensor)
-        for i in range(1, tensor.shape[0] - 1):
-            for j in range(1, tensor.shape[1] - 1):
-                if tensor[i, j] == 1:
-                    if (
-                        tensor[i - 1, j] == 0
-                        or tensor[i + 1, j] == 0
-                        or tensor[i, j - 1] == 0
-                        or tensor[i, j + 1] == 0
-                    ):
-                        contour[i, j] = 1
-        return torch.tensor(contour).unsqueeze(0)
+        elif rand > 0.33:  # 반전
+            return 1 - tensor
+        else:  # Edge 이미지로 변환
+            tensor = (tensor > 0.5).float()
+            tensor = tensor.squeeze().numpy()
+            contour = np.zeros_like(tensor)
+            for i in range(1, tensor.shape[0] - 1):
+                for j in range(1, tensor.shape[1] - 1):
+                    if tensor[i, j] == 1:
+                        if (
+                            tensor[i - 1, j] == 0
+                            or tensor[i + 1, j] == 0
+                            or tensor[i, j - 1] == 0
+                            or tensor[i, j + 1] == 0
+                        ):
+                            contour[i, j] = 1
+            return torch.tensor(contour).unsqueeze(0)
 
 
 # 데이터 전처리 정의
@@ -99,7 +101,7 @@ transform = transforms.Compose(
     [
         transforms.ToTensor(),  # 이미지를 (0,1) 범위의 텐서로 변환
         RandomInvertColor(),  # 이미지의 색상을 랜덤으로 반전
-        ToContour(),  # 이미지를 컨투어로 변환
+        # ToContour(),  # 이미지를 엣지 이미지로 변환
         transforms.Normalize(
             mean=(param.normalize_mean,), std=(param.normalize_std,)
         ),  # 이미지를 정규화한다.
@@ -134,9 +136,9 @@ plt.savefig("train_dataset.png", dpi=200)
 summary(MnistTrain(), (1, 28, 28))
 
 
-for ii in range(3):
+def experiment(exp_name: str):
     # 실험 이름 설정
-    param.name = "Exp4-" + str(ii + 1)
+    param.name = exp_name
     print(param.name)
 
     # 데이터셋을 batch 단위로 불러올 수 있는 DataLoader 객체 생성.
@@ -238,9 +240,8 @@ for ii in range(3):
         history_test.append(test_loss / total)
         test_accuracy_mean.append(total_accuracy / total)
 
-        print("")
         print(
-            f"Epoch: {_epoch+1:2d}, Test Loss: {history_test[-1]:.4f}, Test Accuracy: {test_accuracy_mean[-1]:.4f}, Learning Time: {end_time - start_time:.2f} sec"
+            f"\rEpoch: {_epoch+1:2d}, Test Loss: {history_test[-1]:.4f}, Test Accuracy: {test_accuracy_mean[-1]:.4f}, Learning Time: {end_time - start_time:.2f} sec"
         )
 
     plt.figure(figsize=(14, 12))
@@ -318,15 +319,5 @@ for ii in range(3):
     )
 
 
-# 모델의 가중치 저장 여부를 묻는다.
-while True:
-    k = input("모델 가중치를 저장하시겠습니까? (y/n): ")
-    if k == "y":
-        torch.save(model.state_dict(), "model_weights.pth")
-        print("모델 가중치를 저장했습니다.")
-        break
-    elif k == "n":
-        print("모델 가중치를 저장하지 않았습니다.")
-        break
-    else:
-        print("잘못된 입력입니다. 다시 입력해주세요.")
+for i in range(3):
+    experiment("Exp4-" + str(i + 1))
