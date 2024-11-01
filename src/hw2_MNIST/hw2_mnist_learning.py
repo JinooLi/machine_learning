@@ -42,7 +42,7 @@ class params:
 
 # 파라미터 객체 생성.
 # 여기에서 실험에서 변경할 파라미터를 설정한다.
-param = params(normalize_mean=0.1307, normalize_std=0.3018)
+param = params()
 
 
 # cnn 모델 정의
