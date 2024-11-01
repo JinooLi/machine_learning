@@ -71,7 +71,7 @@ class MnistTrain(nn.Module):
 
 # 사용자 정의 색 반전 클래스 정의
 # 랜덤으로 색상을 반전하거나 엣지 이미지로 변환하는 클래스
-class RandomInvertColor(object):
+class Augmentation(object):
     def __call__(self, tensor):
         rand = torch.rand(1)
         if rand > 0.66:  # 그대로
@@ -99,8 +99,7 @@ class RandomInvertColor(object):
 transform = transforms.Compose(
     [
         transforms.ToTensor(),  # 이미지를 (0,1) 범위의 텐서로 변환
-        RandomInvertColor(),  # 이미지의 색상을 랜덤으로 반전
-        # ToContour(),  # 이미지를 엣지 이미지로 변환
+        Augmentation(),  # 이미지를 랜덤으로 반전하거나 엣지 이미지로 변환
         transforms.Normalize(
             mean=(param.normalize_mean,), std=(param.normalize_std,)
         ),  # 이미지를 정규화한다.

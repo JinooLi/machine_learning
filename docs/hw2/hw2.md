@@ -298,9 +298,7 @@ optimizer 종류를 Adamax로 변경하여 실험한다.
 
 # Appendix
 
-## MNIST 분류기 구성 
-
-### 환경
+## 환경
 - PC
     - CPU: i5-12400F
     - RAM: 32GB
@@ -314,11 +312,11 @@ optimizer 종류를 Adamax로 변경하여 실험한다.
     - Numpy
     - Matplotlib
 
-### 코드
+## 코드
 깃허브 링크 : [https://github.com/JinooLi/machine_learning/blob/main/src/hw2_MNIST/hw2_mnist_learning.py](https://github.com/JinooLi/machine_learning/blob/main/src/hw2_MNIST/hw2_mnist_learning.py)
 
 
-#### 1. 필요한 라이브러리 임포트
+### 필요한 라이브러리 임포트
 
 ```python
 import torch
@@ -334,13 +332,35 @@ import time
 
 ---
 
-#### 2. 파라미터 클래스 정의
+### 작업 경로 설정 및 디바이스 선택
+
+```python
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("This computer uses", device)
+```
+
+- 현재 **스크립트 위치**로 작업 경로를 설정.
+- **CUDA**가 가능할 경우 GPU를, 그렇지 않으면 CPU를 사용.
+
+---
+
+### 하이퍼 파라미터 클래스 정의
 
 ```python
 class params:
-    def __init__(self, batch_size=1024, lr=0.001, epoch=50, 
-                 normalize_mean=0.5, normalize_std=0.5, 
-                 optimizer=torch.optim.Adam, loss=nn.CrossEntropyLoss):
+    def __init__(
+        self,
+        name: str = "MNIST",
+        batch_size: int = 1024,
+        lr: float = 0.001,
+        epoch: int = 50,
+        normalize_mean: float = 0.5,
+        normalize_std: float = 0.5,
+        optimizer: torch.optim.Optimizer = torch.optim.Adam,
+        loss: nn.modules.loss._Loss = nn.CrossEntropyLoss,
+    ) -> None:
+        self.name = name
         self.batch_size = batch_size
         self.lr = lr
         self.epoch = epoch
@@ -358,80 +378,7 @@ param = params()
 
 ---
 
-#### 3. 작업 경로 설정 및 디바이스 선택
-
-```python
-os.chdir(os.path.dirname(os.path.realpath(__file__)))
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("This computer uses", device)
-```
-
-- 현재 **스크립트 위치**로 작업 경로를 설정.
-- **CUDA**가 가능할 경우 GPU를, 그렇지 않으면 CPU를 사용.
-
----
-
-#### 4. 사용자 정의 색 반전 클래스 정의
-
-```python
-class RandomInvertColor(object):
-    def __call__(self, tensor):
-        if torch.rand(1) > 0.5:
-            return tensor
-        return 1 - tensor  # 색상 반전
-```
-
-- 입력 텐서(이미지)를 50% 확률로 **색 반전**시킨다.  
-이는 데이터 **증강**(augmentation)을 위한 것이다.
-
----
-
-#### 5. 데이터 전처리 파이프라인 설정
-
-```python
-transform = transforms.Compose([
-    transforms.ToTensor(),  
-    RandomInvertColor(),  
-    transforms.Normalize(mean=(0.5,), std=(0.5,))  
-])
-```
-
-- **`ToTensor()`**: 이미지를 (0,1) 범위의 텐서로 변환.
-- **`RandomInvertColor()`**: 색을 랜덤으로 반전.
-- **정규화**: 평균 0.5, 표준편차 0.5로 이미지 정규화.  
-    원래 MNIST의 평균과 표준편차는 0.1307, 0.3081이지만, 50% 확률로 색 반전을 수행하므로 이 값은 변경됨.
-
----
-
-#### 6. 데이터셋 및 데이터 로더 설정
-
-```python
-train_dataset = datasets.MNIST(root="./data", train=True, download=True, transform=transform)
-test_dataset = datasets.MNIST(root="./data", train=False, download=True, transform=transform)
-
-train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=1024, shuffle=False)
-```
-
-- **MNIST 데이터셋**을 다운로드하고 전처리한다.
-- **DataLoader**로 데이터를 **배치(batch)** 단위로 로드.
-
----
-
-#### 7. 데이터셋 예시 확인
-
-```python
-examples = enumerate(train_loader)
-batch_idx, (example_data, example_targets) = next(examples)
-print(f"예시 이미지 배치 크기: {example_data.size()}")
-print(f"예시 라벨: {example_targets}")
-```
-
-- 첫 번째 배치 데이터를 로드하여 **이미지 크기**와 **라벨** 출력.
-
----
-
-#### 8. CNN 모델 정의
+### CNN 모델 정의
 
 ```python
 class MnistTrain(nn.Module):
@@ -462,12 +409,137 @@ class MnistTrain(nn.Module):
 
 ---
 
-#### 9. 손실 함수 및 옵티마이저 설정
+### augmentation (색반전, 경계선 추출)
+pytorch에서는 데이터 전처리를 위한 클래스를 정의하여 사용할 수 있다.
+
+```python
+class Augmentation(object):
+    def __call__(self, tensor):
+        rand = torch.rand(1)
+        if rand > 0.66:  # 그대로
+            return tensor
+        elif rand > 0.33:  # 반전
+            return 1 - tensor
+        else:  # Edge 이미지로 변환
+            tensor = (tensor > 0.5).float()
+            tensor = tensor.squeeze().numpy()
+            contour = np.zeros_like(tensor)
+            for i in range(1, tensor.shape[0] - 1):
+                for j in range(1, tensor.shape[1] - 1):
+                    if tensor[i, j] == 1:
+                        if (
+                            tensor[i - 1, j] == 0
+                            or tensor[i + 1, j] == 0
+                            or tensor[i, j - 1] == 0
+                            or tensor[i, j + 1] == 0
+                        ):
+                            contour[i, j] = 1
+            return torch.tensor(contour).unsqueeze(0)
+```
+
+- 입력 텐서(이미지)를 33% 확률로 **색 반전**시킨다.  
+- 33% 확률로 **경계선 추출** 이미지로 변환한다.  
+    경계선 추출은 **이미지의 픽셀값이 0.5 이상인 부분을 1로, 0.5 미만인 부분을 0으로** 변환한다.  
+    이후, **경계선 부분**을 찾아 **1로 변환**한다.
+- 나머지 33%는 **원본 이미지**를 반환한다.
+
+---
+
+### 데이터 전처리 파이프라인 설정
+
+```python
+transform = transforms.Compose([
+    transforms.ToTensor(),  
+    Augmentation(),  
+    mean=(param.normalize_mean,), std=(param.normalize_std,) 
+])
+```
+
+- **`ToTensor()`**: 이미지를 (0,1) 범위의 텐서로 변환.
+- **`Augmentation()`**: 색을 랜덤으로 반전하거나 경계선을 추출하여 이미지 변환.
+- **정규화**: param 객체에서 정한 평균과 표준편차로 이미지 정규화.
+
+---
+
+### 학습 및 테스트 데이터셋 다운로드
+
+```python
+train_dataset = datasets.MNIST(
+    root="./data", train=True, download=True, transform=transform
+)
+
+test_dataset = datasets.MNIST(
+    root="./data", train=False, download=True, transform=transform
+)
+```
+
+- **MNIST 데이터셋**을 다운로드하고 전처리한다.
+
+---
+
+### 데이터셋 및 모델 구조 확인
+
+```python
+# 데이터셋 9개 출력
+img_loader = DataLoader(train_dataset, batch_size=9, shuffle=True)
+images, labels = next(iter(img_loader))
+
+fig, axes = plt.subplots(3, 3, figsize=(10, 10))
+fig.suptitle("train_dataset", fontsize=16)
+
+for i in range(9):
+    ax = axes[i // 3, i % 3]
+    ax.imshow(images[i].squeeze(), cmap="gray")
+    ax.set_title(f"Label: {labels[i]}")
+    ax.axis("off")
+
+plt.savefig("train_dataset.png", dpi=200)
+
+# 모델 구조 출력
+summary(MnistTrain(), (1, 28, 28))
+```
+
+- **train_dataset**에서 **9개의 이미지**를 출력. 전처리가 잘 되었는지 확인한다.
+- **MnistTrain** 모델의 구조를 출력한다.
+
+---
+
+### experiment() 함수 정의
+이 함수 안에 학습 및 테스트 루프를 정의한다. 이를 통해 실험을 n번 반복하고 결과를 비교할 수 있다.
+
+#### 데이터 로더 설정
+
+```python
+    train_loader = DataLoader(
+        train_dataset, batch_size=param.batch_size, shuffle=True, num_workers=4
+    )
+    test_loader = DataLoader(
+        test_dataset, batch_size=1024, shuffle=False, num_workers=4
+    )
+```
+
+- **train_loader**: 학습 데이터셋을 불러온다. 배치 사이즈는 param 객체에서 설정한 값으로 하며, 셔플을 수행한다.
+- **test_loader**: 테스트 데이터셋을 불러온다. 배치 사이즈는 1024로 설정하며, 셔플을 수행하지 않는다.
+
+
+#### 배치 크기와 라벨 확인
+    
+```python
+examples = enumerate(train_loader)
+batch_idx, (example_data, example_targets) = next(examples)
+print(f"예시 이미지 배치 크기: {example_data.size()}")
+print(f"예시 라벨: {example_targets}")
+```
+
+
+#### 모델, 손실 함수, 옵티마이저 설정
 
 ```python
 model = MnistTrain().to(device)
 criterion = param.loss()
 optimizer = param.optimizer(model.parameters(), lr=param.lr)
+print("loss function: ", criterion)
+print("optimizer: ", optimizer)
 ```
 
 - loss 함수와 옵티마이저를 설정한다.
@@ -475,7 +547,7 @@ optimizer = param.optimizer(model.parameters(), lr=param.lr)
 
 ---
 
-#### 10. 학습 루프 정의
+#### 학습 루프 정의
 
 ```python
 history = []
@@ -515,11 +587,13 @@ for _epoch in range(param.epoch):
 
 ---
 
-#### 11. 테스트 루프 정의
+#### 테스트 루프 정의
 
 ```python
 model.eval()
-test_loss, total, total_accuracy = 0, 0, 0
+test_loss = 0
+total = 0
+total_accuracy = 0
 with torch.no_grad():
     for data, target in test_loader:
         data, target = data.to(device), target.to(device)
@@ -531,8 +605,20 @@ with torch.no_grad():
         total_accuracy += accuracy
         total += 1
 
+        numpy_output = output.detach().cpu().numpy()
+        numpy_target = target.detach().cpu().numpy()
+        numpy_output = numpy_output.argmax(axis=1)
+        numpy_target = numpy_target.argmax(axis=1)
+        correct_count = (numpy_output == numpy_target).sum()
+        accuracy = correct_count / len(numpy_output)
+        total_accuracy += accuracy
+
     history_test.append(test_loss / total)
     test_accuracy_mean.append(total_accuracy / total)
+
+    print(
+        f"\rEpoch: {_epoch+1:2d}, Test Loss: {history_test[-1]:.4f}, Test Accuracy: {test_accuracy_mean[-1]:.4f}, Learning Time: {end_time - start_time:.2f} sec"
+    )
 ```
 
 - **학습이 끝난 후** 테스트 데이터로 평가
@@ -540,7 +626,7 @@ with torch.no_grad():
 
 ---
 
-#### 12. 결과 시각화
+#### 결과 시각화
 
 ```python
 plt.figure(figsize=(14, 12))
@@ -608,3 +694,13 @@ plt.close()
 - **모델 정보**와 **학습 시간, 테스트 정확도**를 출력.
 - **손실과 정확도**의 변화를 그래프로 시각화 및 저장.
 
+---
+
+### 실험 루프 실행
+
+```python
+for i in range(3):
+    experiment("Exp5-" + str(i + 1))
+```
+
+- 실험의 이름을 설정하고 실험을 반복한다.
