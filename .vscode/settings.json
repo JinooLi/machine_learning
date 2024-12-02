@@ -26,5 +26,6 @@
     "xlabel",
     "xlim",
     "ylabel"
-  ]
+  ],
+  "jupyter.kernels.excludePythonEnvironments": ["usr/local/bin/python"]
 }
