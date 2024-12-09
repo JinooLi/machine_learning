@@ -1,3 +1,4 @@
 data
 src/**/*.png
 *.pth
+__pycache__/
