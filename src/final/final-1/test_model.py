@@ -5,6 +5,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from final import Generator, Discriminator
 import os
+import torch.nn.functional as F
 
 
 def load_model(model_path):
@@ -16,7 +17,7 @@ def load_model(model_path):
     discriminator = Discriminator().to(device)
 
     # 모델 가중치 로드
-    checkpoint = torch.load(model_path, map_location=device)
+    checkpoint = torch.load(model_path, map_location=device, weights_only=True)
     generator.load_state_dict(checkpoint["generator_state_dict"])
 
     # 평가 모드로 설정
@@ -52,6 +53,9 @@ def save_comparison(input_tensor, output_tensor, save_path="comparison.png"):
         return (tensor + 1) / 2
 
     # 입력 이미지와 출력 이미지를 가로로 나란히 배치
+    input_tensor = F.interpolate(
+        input_tensor, size=output_tensor.shape[2:], mode="bicubic"
+    )
     comparison = torch.cat(
         [denormalize(input_tensor), denormalize(output_tensor)], dim=3
     )
@@ -69,11 +73,11 @@ def save_comparison(input_tensor, output_tensor, save_path="comparison.png"):
 def main():
     print("테스트 모델 실행")
     # 모델 경로 설정 (이미 학습된 모델 경로)
-    model_path = "./final_model/model_epoch_100.pth"
+    model_path = "./checkpoint_epoch_100.pth"
     print(f"모델 경로: {model_path}")
 
     # 테스트할 이미지 경로 설정
-    test_image_path = "./data/test/class1/0006.png"
+    test_image_path = "./data/test/class1/0018.png"
     print(f"테스트 이미지 경로: {test_image_path}")
 
     # 결과 저장 디렉토리 생성

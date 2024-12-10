@@ -194,8 +194,20 @@ def main():
     optimizer_G = optim.Adam(generator.parameters(), lr=0.0003, betas=(0.5, 0.999))
     optimizer_D = optim.Adam(discriminator.parameters(), lr=0.0003, betas=(0.5, 0.999))
 
+    # 체크포인트 로드
+    start_epoch = 0
+    checkpoint_path = "./checkpoint_epoch_50.pth"
+    if os.path.exists(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        generator.load_state_dict(checkpoint["generator_state_dict"])
+        discriminator.load_state_dict(checkpoint["discriminator_state_dict"])
+        optimizer_G.load_state_dict(checkpoint["optimizer_G_state_dict"])
+        optimizer_D.load_state_dict(checkpoint["optimizer_D_state_dict"])
+        start_epoch = checkpoint["epoch"] + 1
+        print(f"Checkpoint loaded, starting from epoch {start_epoch}")
+
     # Training loop
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         progress_bar = tqdm(enumerate(train_loader), total=len(train_loader))
         for i, (images, _) in progress_bar:
             d_loss, g_loss = train_step(
